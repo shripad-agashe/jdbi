@@ -29,7 +29,8 @@ public class ImmutablesTaster implements Function<Type, Optional<PojoProperties<
 
     @Override
     public Optional<PojoProperties<?>> apply(Type t) {
-        if (!Arrays.stream(GenericTypes.getErasedType(t).getInterfaces())
+        Class<?>[] ifaces = GenericTypes.getErasedType(t).getInterfaces();
+        if (!Arrays.stream(ifaces)
             .filter(
                 i -> i.getAnnotation(Value.Immutable.class) != null
                   || i.getAnnotation(Value.Modifiable.class) != null)

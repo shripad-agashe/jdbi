@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 
 import org.jdbi.v3.core.generic.GenericTypes;
 import org.jdbi.v3.core.mapper.reflect.ColumnName;
+import org.jdbi.v3.core.statement.UnableToCreateStatementException;
 
 public class BeanTaster implements Function<Type, Optional<PojoProperties<?>>> {
 
@@ -133,7 +134,25 @@ public class BeanTaster implements Function<Type, Optional<PojoProperties<?>>> {
 
             @Override
             public Object get(T pojo) {
-                throw new UnsupportedOperationException();
+                Method getter = property.getReadMethod();
+
+                if (getter == null) {
+                    throw new UnableToCreateStatementException(String.format("No getter method found for "
+                            + "bean property [%s] on [%s]",
+                        getName(), pojo));
+                }
+
+                try {
+                    return getter.invoke(pojo);
+                } catch (IllegalAccessException e) {
+                    throw new UnableToCreateStatementException(String.format("Access exception invoking "
+                            + "method [%s] on [%s]",
+                            getter.getName(), pojo), e);
+                } catch (InvocationTargetException e) {
+                    throw new UnableToCreateStatementException(String.format("Invocation target exception invoking "
+                            + "method [%s] on [%s]",
+                            getter.getName(), pojo), e);
+                }
             }
 
             @Override
