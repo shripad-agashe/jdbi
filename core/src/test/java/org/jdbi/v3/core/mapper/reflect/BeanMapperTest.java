@@ -14,10 +14,15 @@
 
 package org.jdbi.v3.core.mapper.reflect;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.when;
+
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.HandleAccess;
 import org.jdbi.v3.core.SampleBean;
@@ -35,10 +40,6 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.when;
 
 public class BeanMapperTest {
 
@@ -264,7 +265,7 @@ public class BeanMapperTest {
         assertThatThrownBy(() -> mapper.map(resultSet, ctx)).isInstanceOf(IllegalArgumentException.class);
     }
 
-    static class ColumnNameBean {
+    public static class ColumnNameBean {
         int i;
         String s;
 
@@ -352,7 +353,7 @@ public class BeanMapperTest {
             .containsExactly(42, null);
     }
 
-    static class NestedBean {
+    public static class NestedBean {
         private Integer testValue;
         private Something nested;
 
@@ -431,7 +432,7 @@ public class BeanMapperTest {
             .containsExactly(42, null);
     }
 
-    static class NestedPrefixBean {
+    public static class NestedPrefixBean {
         private Integer integerValue;
         private Something nested;
 
