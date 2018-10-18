@@ -83,31 +83,37 @@ public class TestOptionalArgumentH2 {
     }
 
     private Object getTestBeanFull() {
-        return new Object() {
-            public long getId() {
-                return 1;
-            }
+        return new TestBeanFull();
+    }
 
-            public Object getValue() {
-                return new Object() {
-                    public String getText() {
-                        return "TEST";
-                    }
-                };
+    public static final class TestBeanFull {
+        public static final class ValueObject {
+            public String getText() {
+                return "TEST";
             }
-        };
+        }
+
+        public long getId() {
+            return 1;
+        }
+
+        public Object getValue() {
+            return new ValueObject();
+        }
     }
 
     private Object getTestBeanEmpty() {
-        return new Object() {
-            public long getId() {
-                return 1;
-            }
+        return new TestBeanEmpty();
+    }
 
-            public Object getValue() {
-                return null;
-            }
-        };
+    public static final class TestBeanEmpty {
+        public long getId() {
+            return 1;
+        }
+
+        public Object getValue() {
+            return null;
+        }
     }
 
     private class IdValue {

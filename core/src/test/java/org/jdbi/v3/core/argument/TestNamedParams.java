@@ -16,6 +16,7 @@ package org.jdbi.v3.core.argument;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.Something;
 import org.jdbi.v3.core.rule.H2DatabaseRule;
@@ -104,12 +105,7 @@ public class TestNamedParams {
 
         assertThat(h
             .createUpdate("insert into something (id, name) values (:my.nested.id, :my.nested.name)")
-            .bindBean("my", new Object() {
-                @SuppressWarnings("unused")
-                public Something getNested() {
-                    return thing;
-                }
-            })
+            .bindBean("my", new BeanPropertyNestedBinding(thing))
             .execute()).isEqualTo(1);
 
         assertThat(h
@@ -117,6 +113,18 @@ public class TestNamedParams {
             .mapToBean(Something.class)
             .findOnly())
             .isEqualTo(thing);
+    }
+
+    public static final class BeanPropertyNestedBinding {
+        private final Something thing;
+
+        public BeanPropertyNestedBinding(Something thing) {
+            this.thing = thing;
+        }
+
+        public Something getNested() {
+            return thing;
+        }
     }
 
     @Test
@@ -159,10 +167,7 @@ public class TestNamedParams {
 
         assertThat(h
             .createUpdate("insert into something (id, name) values (:my.nested.id, :my.nested.name)")
-            .bindFields("my", new Object() {
-                @SuppressWarnings("unused")
-                public PublicFields nested = new PublicFields(0, "Keith");
-            })
+            .bindFields("my", new FieldsNested())
             .execute())
             .isEqualTo(1);
 
@@ -173,10 +178,8 @@ public class TestNamedParams {
             .isEqualTo(new Something(0, "Keith"));
     }
 
-    public class FunctionsNestedBinding {
-        public NoArgFunctions nested() {
-            return new NoArgFunctions(0, "Keith");
-        }
+    public static final class FieldsNested {
+        public PublicFields nested = new PublicFields(0, "Keith");
     }
 
     public static class PublicFields {
@@ -241,6 +244,12 @@ public class TestNamedParams {
             .isEqualTo(new Something(0, "Keith"));
     }
 
+    public static final class FunctionsNestedBinding {
+        public NoArgFunctions nested() {
+            return new NoArgFunctions(0, "Keith");
+        }
+    }
+
     public static class NoArgFunctions {
         private final int i;
         private final String s;
@@ -282,15 +291,17 @@ public class TestNamedParams {
         Map<String, Object> args = new HashMap<>();
         args.put("id", 0);
         s.bindMap(args);
-        s.bindBean(new Object() {
-            @SuppressWarnings("unused")
-            public String getName() {
-                return "Keith";
-            }
-        });
+        s.bindBean(new CascadedLazyArgs());
         int insertCount = s.execute();
         assertThat(insertCount).isEqualTo(1);
         Something something = h.createQuery("select id, name from something").mapToBean(Something.class).findOnly();
         assertThat(something).isEqualTo(new Something(0, "Keith"));
+    }
+
+    public static final class CascadedLazyArgs {
+        @SuppressWarnings("unused")
+        public String getName() {
+            return "Keith";
+        }
     }
 }
