@@ -14,9 +14,11 @@
 package org.jdbi.v3.core.argument;
 
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.jdbi.v3.core.mapper.reflect.internal.PojoProperties;
 import org.jdbi.v3.core.mapper.reflect.internal.PojoProperties.PojoProperty;
+import org.jdbi.v3.core.mapper.reflect.internal.PojoPropertiesFactory;
 import org.jdbi.v3.core.statement.StatementContext;
 
 /**
@@ -24,7 +26,7 @@ import org.jdbi.v3.core.statement.StatementContext;
  * based on each of its discovered properties.
  */
 public class BeanPropertyArguments extends MethodReturnValueNamedArgumentFinder {
-    private final PojoProperties<?> properties;
+    private final AtomicReference<PojoProperties<?>> properties = new AtomicReference<>();
 
     /**
      * @param prefix an optional prefix (we insert a '.' as a separator)
@@ -32,14 +34,17 @@ public class BeanPropertyArguments extends MethodReturnValueNamedArgumentFinder 
      */
     public BeanPropertyArguments(String prefix, Object bean) {
         super(prefix, bean);
-
-        this.properties = PojoProperties.of(bean.getClass());
     }
 
     @Override
     Optional<TypedValue> getValue(String name, StatementContext ctx) {
+        PojoProperties<?> info = properties.get();
+        if (info == null) {
+            info = ctx.getConfig(PojoPropertiesFactory.class).propertiesOf(object.getClass());
+            properties.set(info);
+        }
         @SuppressWarnings("unchecked")
-        PojoProperty<Object> property = (PojoProperty<Object>) properties.getProperties().get(name);
+        PojoProperty<Object> property = (PojoProperty<Object>) info.getProperties().get(name);
 
         if (property == null) {
             return Optional.empty();

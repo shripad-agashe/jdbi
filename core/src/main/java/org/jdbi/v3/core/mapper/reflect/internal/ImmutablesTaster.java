@@ -42,7 +42,7 @@ public class ImmutablesTaster implements Function<Type, Optional<PojoProperties<
 
     private Set<Class<?>> registered = new HashSet<>();
 
-    public ImmutablesTaster() { }
+    public ImmutablesTaster() {}
 
     private ImmutablesTaster(ImmutablesTaster other) {
         registered.addAll(other.registered);
@@ -54,8 +54,8 @@ public class ImmutablesTaster implements Function<Type, Optional<PojoProperties<
             Arrays.stream(GenericTypes.getErasedType(t).getInterfaces())
             .filter(
                 i -> i.getAnnotation(Value.Immutable.class) != null
-                  || i.getAnnotation(Value.Modifiable.class) != null ||
-                  i.getSimpleName().equals("SubValue")) // XXX TODO
+                  || i.getAnnotation(Value.Modifiable.class) != null
+                  || registered.contains(i))
             .findAny();
         if (!defn.isPresent()) {
             return Optional.empty();

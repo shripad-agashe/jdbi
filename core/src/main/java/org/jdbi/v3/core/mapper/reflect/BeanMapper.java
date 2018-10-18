@@ -31,6 +31,7 @@ import org.jdbi.v3.core.mapper.SingleColumnMapper;
 import org.jdbi.v3.core.mapper.reflect.internal.PojoProperties;
 import org.jdbi.v3.core.mapper.reflect.internal.PojoProperties.PojoBuilder;
 import org.jdbi.v3.core.mapper.reflect.internal.PojoProperties.PojoProperty;
+import org.jdbi.v3.core.mapper.reflect.internal.PojoPropertiesFactory;
 import org.jdbi.v3.core.statement.StatementContext;
 
 import static org.jdbi.v3.core.mapper.reflect.ReflectionMapperUtil.anyColumnsStartWithPrefix;
@@ -101,13 +102,11 @@ public class BeanMapper<T> implements RowMapper<T> {
 
     private final Class<T> type;
     private final String prefix;
-    private final PojoProperties<T> info;
     private final Map<PojoProperty<T>, BeanMapper<?>> nestedMappers = new ConcurrentHashMap<>();
 
     private BeanMapper(Class<T> type, String prefix) {
         this.type = type;
         this.prefix = prefix.toLowerCase();
-        info = PojoProperties.of(type);
     }
 
     @Override
@@ -139,6 +138,7 @@ public class BeanMapper<T> implements RowMapper<T> {
                                                List<String> columnNames,
                                                List<ColumnNameMatcher> columnNameMatchers,
                                                List<String> unmatchedColumns) {
+        final PojoProperties<T> info = ctx.getConfig(PojoPropertiesFactory.class).propertiesOf(type);
         final List<RowMapper<?>> mappers = new ArrayList<>();
         final List<PojoProperty<T>> properties = new ArrayList<>();
 
