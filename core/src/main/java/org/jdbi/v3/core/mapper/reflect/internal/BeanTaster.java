@@ -52,22 +52,22 @@ public class BeanTaster implements Function<Type, Optional<PojoProperties<?>>> {
 
     @Override
     public Optional<PojoProperties<?>> apply(Type t) {
+        // BeanTaster is the fallback and throws rather than chaining on.
         return Optional.of(new BeanPojoProperties<>(t));
     }
 
     static class BeanPojoProperties<T> extends PojoProperties<T> {
         private final BeanInfo info;
-        private final Map<String, PojoProperty<T>> properties;
+        private final Map<String, BeanPojoProperty<T>> properties;
 
         BeanPojoProperties(Type type) {
             super(type);
             try {
                 this.info = Introspector.getBeanInfo(GenericTypes.getErasedType(type));
             } catch (IntrospectionException e) {
-                // BeanTaster is the fallback and throws rather than chaining on.
                 throw new IllegalArgumentException("Failed to inspect bean " + type, e);
             }
-            final Map<String, PojoProperty<T>> props = new LinkedHashMap<>();
+            final Map<String, BeanPojoProperty<T>> props = new LinkedHashMap<>();
             for (PropertyDescriptor property : info.getPropertyDescriptors()) {
                 final BeanPojoProperty<T> bp = new BeanPojoProperty<>(property);
                 props.put(bp.getName(), bp);
@@ -76,7 +76,7 @@ public class BeanTaster implements Function<Type, Optional<PojoProperties<?>>> {
         }
 
         @Override
-        public Map<String, PojoProperty<T>> getProperties() {
+        public Map<String, ? extends PojoProperty<T>> getProperties() {
             return properties;
         }
 
@@ -92,6 +92,25 @@ public class BeanTaster implements Function<Type, Optional<PojoProperties<?>>> {
             }
             return new PojoBuilder<T>() {
                 @Override
+                public void set(String property, Object value) {
+                    final BeanPojoProperties<T>.BeanPojoProperty<T> prop = properties.get(property);
+                    try {
+                        Method writeMethod = prop.descriptor.getWriteMethod();
+                        if (writeMethod == null) {
+                            throw new IllegalArgumentException(String.format(MISSING_SETTER, property));
+                        }
+                        writeMethod.invoke(instance, value);
+                    } catch (IllegalAccessException e) {
+                        throw new IllegalArgumentException(String.format(SETTER_NOT_ACCESSIBLE, property), e);
+                    } catch (InvocationTargetException e) {
+                        throw new IllegalArgumentException(String.format(INVOCATION_TARGET_EXCEPTION, property), e);
+                    } catch (IllegalArgumentException e) {
+                        throw new IllegalArgumentException(String.format(REFLECTION_ILLEGAL_ARGUMENT_EXCEPTION,
+                            prop.getType(), prop.getName()), e);
+                    }
+                }
+
+                @Override
                 public T build() {
                     return instance;
                 }
@@ -99,33 +118,32 @@ public class BeanTaster implements Function<Type, Optional<PojoProperties<?>>> {
         }
 
         class BeanPojoProperty<T> implements PojoProperty<T> {
-
-            private final PropertyDescriptor property;
+            final PropertyDescriptor descriptor;
 
             BeanPojoProperty(PropertyDescriptor property) {
-                this.property = property;
+                this.descriptor = property;
             }
 
             @Override
             public String getName() {
-                return Stream.of(property.getReadMethod(), property.getWriteMethod())
+                return Stream.of(descriptor.getReadMethod(), descriptor.getWriteMethod())
                         .filter(Objects::nonNull)
                         .map(method -> method.getAnnotation(ColumnName.class))
                         .filter(Objects::nonNull)
                         .map(ColumnName::value)
                         .findFirst()
-                        .orElseGet(property::getName);
+                        .orElseGet(descriptor::getName);
             }
 
             @Override
             public Type getType() {
-                return Optional.ofNullable(property.getReadMethod()).map(Method::getGenericReturnType)
-                        .orElseGet(() -> property.getWriteMethod().getGenericParameterTypes()[0]);
+                return Optional.ofNullable(descriptor.getReadMethod()).map(Method::getGenericReturnType)
+                        .orElseGet(() -> descriptor.getWriteMethod().getGenericParameterTypes()[0]);
             }
 
             @Override
             public <A extends Annotation> Optional<A> getAnnotation(Class<A> anno) {
-                return Stream.of(property.getReadMethod(), property.getWriteMethod())
+                return Stream.of(descriptor.getReadMethod(), descriptor.getWriteMethod())
                         .filter(Objects::nonNull)
                         .map(m -> m.getAnnotation(anno))
                         .filter(Objects::nonNull)
@@ -134,7 +152,7 @@ public class BeanTaster implements Function<Type, Optional<PojoProperties<?>>> {
 
             @Override
             public Object get(T pojo) {
-                Method getter = property.getReadMethod();
+                Method getter = descriptor.getReadMethod();
 
                 if (getter == null) {
                     throw new UnableToCreateStatementException(String.format("No getter method found for "
@@ -152,24 +170,6 @@ public class BeanTaster implements Function<Type, Optional<PojoProperties<?>>> {
                     throw new UnableToCreateStatementException(String.format("Invocation target exception invoking "
                             + "method [%s] on [%s]",
                             getter.getName(), pojo), e);
-                }
-            }
-
-            @Override
-            public void set(PojoBuilder<T> builder, Object value) {
-                try {
-                    Method writeMethod = property.getWriteMethod();
-                    if (writeMethod == null) {
-                        throw new IllegalArgumentException(String.format(MISSING_SETTER, property));
-                    }
-                    writeMethod.invoke(builder.build(), value);
-                } catch (IllegalAccessException e) {
-                    throw new IllegalArgumentException(String.format(SETTER_NOT_ACCESSIBLE, property), e);
-                } catch (InvocationTargetException e) {
-                    throw new IllegalArgumentException(String.format(INVOCATION_TARGET_EXCEPTION, property), e);
-                } catch (IllegalArgumentException e) {
-                    throw new IllegalArgumentException(String.format(REFLECTION_ILLEGAL_ARGUMENT_EXCEPTION,
-                        property.getPropertyType(), property.getName()), e);
                 }
             }
         }

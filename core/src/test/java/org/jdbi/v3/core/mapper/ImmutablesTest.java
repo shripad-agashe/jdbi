@@ -13,6 +13,8 @@
  */
 package org.jdbi.v3.core.mapper;
 
+import java.util.Arrays;
+
 import org.immutables.value.Value;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.generic.GenericType;
@@ -24,7 +26,6 @@ import org.junit.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ImmutablesTest {
-
     @Rule
     public H2DatabaseRule dbRule = new H2DatabaseRule();
 
@@ -34,6 +35,8 @@ public class ImmutablesTest {
     public void setup() {
         h = dbRule.getSharedHandle();
         h.execute("create table immutables (t int, x varchar)");
+
+        h.getConfig(JdbiImmutables.class).register(ImmutableSubValue.class);
     }
 
     @Test
@@ -49,7 +52,7 @@ public class ImmutablesTest {
                 .mapTo(new GenericType<SubValue<String, Integer>>() {})
                 .findOnly())
             .extracting("t", "x")
-            .isEqualTo(new Object[] {42, "foo"});
+            .isEqualTo(Arrays.asList(42, "foo"));
     }
 
     public interface BaseValue<T> {

@@ -186,7 +186,7 @@ public class BeanMapper<T> implements RowMapper<T> {
 
                 Object value = mapper.map(r, ctx);
 
-                property.set(pojo, value);
+                pojo.set(property, value);
             }
 
             return pojo.build();

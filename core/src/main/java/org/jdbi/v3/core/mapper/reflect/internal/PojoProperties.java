@@ -83,10 +83,16 @@ public abstract class PojoProperties<T> {
         return type;
     }
 
-    public abstract Map<String, PojoProperty<T>> getProperties();
+    public abstract Map<String, ? extends PojoProperty<T>> getProperties();
     public abstract PojoBuilder<T> create();
 
     public interface PojoBuilder<T> {
+        void set(String property, Object value);
+
+        default void set(PojoProperty<T> property, Object value) {
+            set(property.getName(), value);
+        }
+
         T build();
     }
 
@@ -95,6 +101,5 @@ public abstract class PojoProperties<T> {
         Type getType();
         <A extends Annotation> Optional<A> getAnnotation(Class<A> anno);
         Object get(T pojo);
-        void set(PojoBuilder<T> builder, Object value);
     }
 }
