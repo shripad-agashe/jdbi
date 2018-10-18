@@ -49,6 +49,16 @@ public class ImmutablesTaster implements Function<Type, Optional<PojoProperties<
     }
 
     @Override
+    public ImmutablesTaster createCopy() {
+        return new ImmutablesTaster(this);
+    }
+
+    public void register(Class<?> iface, Class<?> impl) {
+        registered.add(iface);
+        registered.add(impl);
+    }
+
+    @Override
     public Optional<PojoProperties<?>> apply(Type t) {
         final Optional<Class<?>> defn =
             Arrays.stream(GenericTypes.getErasedType(t).getInterfaces())
@@ -61,6 +71,16 @@ public class ImmutablesTaster implements Function<Type, Optional<PojoProperties<
             return Optional.empty();
         }
         return Optional.of(new ImmutablesPojoProperties<>(defn.get(), GenericTypes.getErasedType(t)));
+    }
+
+    private static <T> T guard(ThrowingSupplier<T> supp) {
+        try {
+            return supp.get();
+        } catch (RuntimeException | Error e) {
+            throw e;
+        } catch (Throwable t) {
+            throw new UnableToCreateStatementException("Couldn't execute Immutables method", t);
+        }
     }
 
     class ImmutablesPojoProperties<T> extends PojoProperties<T> {
@@ -94,10 +114,10 @@ public class ImmutablesTaster implements Function<Type, Optional<PojoProperties<
         }
 
         private boolean isProperty(Method m) {
-            return  m.getParameterCount() == 0 &&
-                    !m.isSynthetic() &&
-                    !Modifier.isStatic(m.getModifiers()) &&
-                    m.getDeclaringClass() != Object.class;
+            return m.getParameterCount() == 0
+                && !m.isSynthetic()
+                && !Modifier.isStatic(m.getModifiers())
+                && m.getDeclaringClass() != Object.class;
         }
 
         @Override
@@ -130,7 +150,7 @@ public class ImmutablesTaster implements Function<Type, Optional<PojoProperties<
         private final MethodHandle getter;
         final MethodHandle setter;
 
-        public ImmutablesPojoProperty(String name, Type type, Method defn, MethodHandle getter, MethodHandle setter) {
+        ImmutablesPojoProperty(String name, Type type, Method defn, MethodHandle getter, MethodHandle setter) {
             this.name = name;
             this.type = type;
             this.defn = defn;
@@ -159,27 +179,7 @@ public class ImmutablesTaster implements Function<Type, Optional<PojoProperties<
         }
     }
 
-    private static <T> T guard(ThrowingSupplier<T> supp) {
-        try {
-            return supp.get();
-        } catch (RuntimeException | Error e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new UnableToCreateStatementException("Couldn't execute Immutables method", t);
-        }
-    }
-
     interface ThrowingSupplier<T> {
         T get() throws Throwable;
-    }
-
-    @Override
-    public ImmutablesTaster createCopy() {
-        return new ImmutablesTaster(this);
-    }
-
-    public void register(Class<?> iface, Class<?> impl) {
-        registered.add(iface);
-        registered.add(impl);
     }
 }

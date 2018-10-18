@@ -31,7 +31,7 @@ public class JdbiImmutables implements JdbiConfig<JdbiImmutables> {
     private final Map<Class<?>, Class<?>> ifaceImpls = new HashMap<>();
     private ConfigRegistry registry;
 
-    public JdbiImmutables() { }
+    public JdbiImmutables() {}
 
     private JdbiImmutables(JdbiImmutables other) {
         ifaceImpls.putAll(other.ifaceImpls);
