@@ -28,7 +28,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.immutables.value.Value;
 import org.jdbi.v3.core.config.JdbiConfig;
 import org.jdbi.v3.core.generic.GenericTypes;
 import org.jdbi.v3.core.mapper.reflect.internal.PojoProperties.PojoProperty;
@@ -36,11 +35,7 @@ import org.jdbi.v3.core.statement.UnableToCreateStatementException;
 
 public class ImmutablesTaster implements Function<Type, Optional<PojoProperties<?>>>, JdbiConfig<ImmutablesTaster> {
 
-    static {
-        Value.Immutable.class.toString(); // Fail fast
-    }
-
-    private Set<Class<?>> registered = new HashSet<>();
+    private final Set<Class<?>> registered = new HashSet<>();
 
     public ImmutablesTaster() {}
 
@@ -62,11 +57,8 @@ public class ImmutablesTaster implements Function<Type, Optional<PojoProperties<
     public Optional<PojoProperties<?>> apply(Type t) {
         final Optional<Class<?>> defn =
             Arrays.stream(GenericTypes.getErasedType(t).getInterfaces())
-            .filter(
-                i -> i.getAnnotation(Value.Immutable.class) != null
-                  || i.getAnnotation(Value.Modifiable.class) != null
-                  || registered.contains(i))
-            .findAny();
+                .filter(registered::contains)
+                .findAny();
         if (!defn.isPresent()) {
             return Optional.empty();
         }
