@@ -75,7 +75,7 @@ public class ImmutablesTaster implements Function<Type, Optional<PojoProperties<
         }
     }
 
-    class ImmutablesPojoProperties<T> extends PojoProperties<T> {
+    static class ImmutablesPojoProperties<T> extends PojoProperties<T> {
         private final Class<?> builderClass;
         private final MethodHandle builderFactory;
         private final MethodHandle builderBuild;
@@ -135,7 +135,7 @@ public class ImmutablesTaster implements Function<Type, Optional<PojoProperties<
         }
     }
 
-    class ImmutablesPojoProperty<T> implements PojoProperty<T> {
+    static class ImmutablesPojoProperty<T> implements PojoProperty<T> {
         private final String name;
         private final Type type;
         private final Method defn;
