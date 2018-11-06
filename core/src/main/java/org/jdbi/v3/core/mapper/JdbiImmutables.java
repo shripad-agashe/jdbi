@@ -23,10 +23,12 @@ import org.jdbi.v3.core.config.JdbiConfig;
 import org.jdbi.v3.core.generic.GenericTypes;
 import org.jdbi.v3.core.mapper.reflect.BeanMapper;
 import org.jdbi.v3.core.mapper.reflect.internal.ImmutablesTaster;
+import org.jdbi.v3.meta.Beta;
 
 /**
  * Configuration class for Jdbi + Immutables support.
  */
+@Beta
 public class JdbiImmutables implements JdbiConfig<JdbiImmutables> {
     private final Map<Class<?>, Class<?>> ifaceImpls = new HashMap<>();
     private ConfigRegistry registry;
