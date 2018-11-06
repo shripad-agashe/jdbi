@@ -13,8 +13,6 @@
  */
 package org.jdbi.v3.core.mapper;
 
-import java.util.Arrays;
-
 import org.immutables.value.Value;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.generic.GenericType;
@@ -80,7 +78,7 @@ public class ImmutablesTest {
                 .mapTo(new GenericType<SubValue<String, Integer>>() {})
                 .findOnly())
             .extracting("t", "x")
-            .isEqualTo(Arrays.asList(42, "foo"));
+            .containsExactly(42, "foo");
     }
 
     public interface BaseValue<T> {
