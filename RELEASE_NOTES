@@ -1,6 +1,7 @@
 3.6.0
-  - New API
+  - New Features
     - ConnectionFactory now also may customize connection closing
+    - Initial support for Immutables value objects
 
 3.5.2
   - Bug Fixes

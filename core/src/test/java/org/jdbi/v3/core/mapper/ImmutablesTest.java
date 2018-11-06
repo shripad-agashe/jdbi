@@ -39,8 +39,36 @@ public class ImmutablesTest {
         h.getConfig(JdbiImmutables.class).register(ImmutableSubValue.class);
     }
 
+    // tag::example[]
+    @Value.Immutable
+    public interface Train {
+        String name();
+        int carriages();
+        boolean observationCar();
+    }
+
     @Test
     public void simpleTest() {
+        h.execute("create table train (name varchar, carriages int, observation_car boolean)");
+        h.getConfig(JdbiImmutables.class).register(ImmutableTrain.class);
+
+        assertThat(
+            h.createUpdate("insert into train(name, carriages, observation_car) values (:name, :carriages, :observationCar)")
+                .bindBean(ImmutableTrain.builder().name("Zephyr").carriages(8).observationCar(true).build())
+                .execute())
+            .isEqualTo(1);
+
+        assertThat(
+            h.createQuery("select * from train")
+                .mapTo(Train.class)
+                .findOnly())
+            .extracting("name", "carriages", "observationCar")
+            .containsExactly("Zephyr", 8, true);
+    }
+    // end::example[]
+
+    @Test
+    public void parameterizedTest() {
         assertThat(
             h.createUpdate("insert into immutables(t, x) values (:t, :x)")
                 .bindBean(ImmutableSubValue.<String, Integer>builder().t(42).x("foo").build())
