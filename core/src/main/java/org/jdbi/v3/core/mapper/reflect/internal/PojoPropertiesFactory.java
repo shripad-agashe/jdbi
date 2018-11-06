@@ -28,6 +28,7 @@ import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.config.ConfigRegistry;
 import org.jdbi.v3.core.config.JdbiConfig;
 import org.jdbi.v3.core.generic.GenericType;
+import org.jdbi.v3.core.internal.JdbiOptionals;
 import org.slf4j.LoggerFactory;
 
 public class PojoPropertiesFactory implements JdbiConfig<PojoPropertiesFactory> {
@@ -82,7 +83,7 @@ public class PojoPropertiesFactory implements JdbiConfig<PojoPropertiesFactory> 
 
     private PojoProperties<?> taste(Type type) {
         return tasters.stream()
-                .flatMap(t -> t.apply(type).stream())
+                .flatMap(t -> JdbiOptionals.stream(t.apply(type)))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Couldn't find properties for " + type));
     }
