@@ -56,7 +56,7 @@ public class JdbiImmutables implements JdbiConfig<JdbiImmutables> {
             @Override
             public Optional<RowMapper<?>> build(Type type, ConfigRegistry config) {
                 final Class<?> raw = GenericTypes.getErasedType(type);
-                return raw == iface || raw == impl ? mapper : Optional.empty();
+                return raw.equals(iface) || raw.equals(impl) ? mapper : Optional.empty();
             }
         });
         return this;

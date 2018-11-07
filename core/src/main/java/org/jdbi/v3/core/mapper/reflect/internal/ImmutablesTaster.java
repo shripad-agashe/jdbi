@@ -68,7 +68,7 @@ public class ImmutablesTaster implements Function<Type, Optional<PojoProperties<
     private static <T> T guard(ThrowingSupplier<T> supp) {
         try {
             return supp.get();
-        } catch (RuntimeException | Error e) {
+        } catch (RuntimeException | Error e) { // NOPMD
             throw e;
         } catch (Throwable t) {
             throw new UnableToCreateStatementException("Couldn't execute Immutables method", t);
