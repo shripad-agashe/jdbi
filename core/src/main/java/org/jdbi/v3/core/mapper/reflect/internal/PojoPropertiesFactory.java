@@ -32,7 +32,7 @@ import org.jdbi.v3.core.internal.JdbiOptionals;
 import org.slf4j.LoggerFactory;
 
 public class PojoPropertiesFactory implements JdbiConfig<PojoPropertiesFactory> {
-    private final List<Function<Type, Optional<PojoProperties<?>>>> tasters = new ArrayList<>();
+    private final List<Function<Type, Optional<? extends PojoProperties<?>>>> tasters = new ArrayList<>();
 
     private final Map<Type, PojoProperties<?>> instances = ExpiringMap.builder()
             .expiration(10, TimeUnit.MINUTES)

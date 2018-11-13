@@ -14,8 +14,6 @@
 package org.jdbi.v3.core.mapper;
 
 import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 import org.jdbi.v3.core.config.ConfigRegistry;
@@ -30,40 +28,48 @@ import org.jdbi.v3.meta.Beta;
  */
 @Beta
 public class JdbiImmutables implements JdbiConfig<JdbiImmutables> {
-    private final Map<Class<?>, Class<?>> ifaceImpls = new HashMap<>();
     private ConfigRegistry registry;
 
     public JdbiImmutables() {}
 
-    private JdbiImmutables(JdbiImmutables other) {
-        ifaceImpls.putAll(other.ifaceImpls);
+    /**
+     * Register an Immutables class by its implementation class.
+     * @param defn the interface {@code T} you write
+     * @param impl the generated {@code ImmutableT} class
+     * @return this configuration class, for method chaining
+     */
+    public <T> JdbiImmutables register(Class<T> defn, Class<? extends T> impl) {
+        return register(defn, impl, null);
     }
 
     /**
-     * Register an Immutables class by its implementation class.
-     * @param impl the generated {@code Immutable*} class
+     * Register Immutables and Modifiable classes by their implementation classes.
+     * @param defn the interface {@code T} you write
+     * @param impl the generated {@code ImmutableT} class
+     * @param modifiable the generated {@code ModifiableT} class
      * @return this configuration class, for method chaining
      */
-    public JdbiImmutables register(Class<?> impl) {
+    public <T> JdbiImmutables register(Class<T> defn, Class<? extends T> impl, Class<? extends T> modifiable) {
         if (impl.isInterface()) {
             throw new IllegalArgumentException("Register the implemented Immutable type, not the specifying interface");
         }
-        final Class<?> iface = impl.getInterfaces()[0];
-        ifaceImpls.put(iface, impl);
-        registry.get(ImmutablesTaster.class).register(iface, impl);
-        final Optional<RowMapper<?>> mapper = Optional.of(BeanMapper.of(impl));
+        registry.get(ImmutablesTaster.class).register(defn, impl, modifiable);
+        final Optional<RowMapper<?>> immutableMapper = Optional.of(BeanMapper.of(impl));
+        final Optional<RowMapper<?>> modifiableMapper = Optional.ofNullable(modifiable).map(BeanMapper::of);
         registry.get(RowMappers.class).register(new RowMapperFactory() {
             @Override
             public Optional<RowMapper<?>> build(Type type, ConfigRegistry config) {
                 final Class<?> raw = GenericTypes.getErasedType(type);
-                return raw.equals(iface) || raw.equals(impl) ? mapper : Optional.empty();
+                if (raw.equals(defn) || raw.equals(impl)) {
+                    return immutableMapper;
+                }
+                if (raw.equals(modifiable)) {
+                    return modifiableMapper;
+                }
+                return Optional.empty();
             }
         });
         return this;
-    }
-
-    public Class<?> implementationFor(Class<?> iface) {
-        return ifaceImpls.get(iface);
     }
 
     @Override
@@ -73,6 +79,6 @@ public class JdbiImmutables implements JdbiConfig<JdbiImmutables> {
 
     @Override
     public JdbiImmutables createCopy() {
-        return new JdbiImmutables(this);
+        return new JdbiImmutables();
     }
 }

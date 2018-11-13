@@ -13,6 +13,10 @@
  */
 package org.jdbi.v3.core.mapper;
 
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
+
 import org.immutables.value.Value;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.generic.GenericType;
@@ -34,7 +38,7 @@ public class ImmutablesTest {
         h = dbRule.getSharedHandle();
         h.execute("create table immutables (t int, x varchar)");
 
-        h.getConfig(JdbiImmutables.class).register(ImmutableSubValue.class);
+        h.getConfig(JdbiImmutables.class).register(SubValue.class, ImmutableSubValue.class);
     }
 
     // tag::example[]
@@ -48,7 +52,7 @@ public class ImmutablesTest {
     @Test
     public void simpleTest() {
         h.execute("create table train (name varchar, carriages int, observation_car boolean)");
-        h.getConfig(JdbiImmutables.class).register(ImmutableTrain.class);
+        h.getConfig(JdbiImmutables.class).register(Train.class, ImmutableTrain.class);
 
         assertThat(
             h.createUpdate("insert into train(name, carriages, observation_car) values (:name, :carriages, :observationCar)")
@@ -88,5 +92,38 @@ public class ImmutablesTest {
     @Value.Immutable
     public interface SubValue<X, T> extends BaseValue<T> {
         X x();
+    }
+
+    @Value.Immutable
+    @Value.Modifiable
+    public interface FooBarBaz {
+        int id();
+        Optional<String> foo();
+        OptionalInt bar();
+        OptionalDouble baz();
+    }
+
+    @Test
+    public void testModifiable() {
+        h.getConfig(JdbiImmutables.class).register(FooBarBaz.class, ImmutableFooBarBaz.class, ModifiableFooBarBaz.class);
+        h.execute("create table fbb (id serial, foo varchar, bar int, baz real)");
+
+        assertThat(h.createUpdate("insert into fbb (id, foo, bar, baz) values (:id, :foo, :bar, :baz)")
+                .bindBean(ModifiableFooBarBaz.create().setFoo("foo").setBar(42).setBaz(1.0))
+                .execute())
+            .isEqualTo(1);
+
+        assertThat(h.createQuery("select * from fbb")
+                .mapTo(ModifiableFooBarBaz.class)
+                .findOnly())
+            .extracting("id", "foo", "bar", "baz")
+            .containsExactly(1, Optional.of("foo"), OptionalInt.of(42), OptionalDouble.of(1.0));
+
+        assertThat(h.createQuery("select * from fbb")
+                .mapTo(ImmutableFooBarBaz.class)
+                .findOnly())
+            .extracting("id", "foo", "bar", "baz")
+        // FIXME: https://github.com/joel-costigliola/assertj-core/pull/1360
+            .containsExactly(1, "foo", 42, 1.0);
     }
 }
