@@ -14,6 +14,7 @@
 package org.jdbi.v3.sqlobject.locator;
 
 import java.util.List;
+
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.Something;
 import org.jdbi.v3.core.config.JdbiConfig;
@@ -32,7 +33,7 @@ public class TestSqlLocator {
     public PgDatabaseRule dbRule = new PgDatabaseRule().withPlugin(new SqlObjectPlugin());
 
     @Test
-    public void testLocateConfigDriven() {
+    public void testLocateConfigDriven() throws Exception {
         Jdbi jdbi = dbRule.getJdbi();
         jdbi.useHandle(h -> {
             h.execute("create table something (id int, name text)");

@@ -13,9 +13,6 @@
  */
 package org.jdbi.v3.core.argument;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.verify;
-
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.Types;
@@ -28,6 +25,9 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
 
 public class TestBeanArguments {
     @Rule
@@ -88,13 +88,15 @@ public class TestBeanArguments {
 
     @Test
     public void testBindIllegalAccess() {
-        assertThatThrownBy(() -> new BeanPropertyArguments("foo", new ThrowsIllegalAccessException()).find("foo.bar", ctx))
+        assertThatThrownBy(() ->
+            new BeanPropertyArguments("foo", new BindIllegalAccess())
+                .find("foo.bar", ctx))
             .isInstanceOf(UnableToCreateStatementException.class);
     }
 
-    public static class ThrowsIllegalAccessException {
+    public static final class BindIllegalAccess {
         public String getBar() throws IllegalAccessException {
-            throw new IllegalAccessException();
+            throw new IllegalAccessException("Normally the JVM throws this but just for testing...");
         }
     }
 
@@ -127,14 +129,20 @@ public class TestBeanArguments {
 
     @Test
     public void testBindNestedOptionalNull() throws Exception {
-        new BeanPropertyArguments("", new FooProperty(null)).find("foo?.id", ctx).get().apply(3, stmt, null);
+        new BeanPropertyArguments("", new FooProperty(null))
+            .find("foo?.id", ctx)
+            .get()
+            .apply(3, stmt, null);
 
         verify(stmt).setNull(3, Types.OTHER);
     }
 
     @Test
     public void testBindNestedNestedOptionalNull() throws Exception {
-        new BeanPropertyArguments("", new FooProperty(null)).find("foo?.bar.id", ctx).get().apply(3, stmt, null);
+        new BeanPropertyArguments("", new FooProperty(null))
+            .find("foo?.bar.id", ctx)
+            .get()
+            .apply(3, stmt, null);
 
         verify(stmt).setNull(3, Types.OTHER);
     }
@@ -159,7 +167,6 @@ public class TestBeanArguments {
 
     @Test
     public void testBindNestedNestedWrongOptionalNull2() {
-
         assertThatThrownBy(() -> new BeanPropertyArguments("", new FooProperty(null))
             .find("foo.bar.?id", ctx)
             .get()
@@ -171,7 +178,10 @@ public class TestBeanArguments {
     public void testBindNestedOptionalNonNull() throws Exception {
         Object bean = new FooProperty(new IdProperty(69));
 
-        new BeanPropertyArguments("", bean).find("foo?.id", ctx).get().apply(3, stmt, null);
+        new BeanPropertyArguments("", bean)
+            .find("foo?.id", ctx)
+            .get()
+            .apply(3, stmt, null);
 
         verify(stmt).setLong(3, 69);
     }
