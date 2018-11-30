@@ -3701,9 +3701,9 @@ jdbi.installPlugin(new H2DatabasePlugin());
 
 == Immutables
 
-link:https://immutables.github.io/[Immutables] is an annotation processor that generates
+link:https://immutables.github.io/[Immutables^] is an annotation processor that generates
 value types based on simple interface descriptions.  The value types naturally map very well
-to `Jdbi` bean binding and row mapping.
+to `Jdbi` properties binding and row mapping.
 
 [WARNING]
 Immutables support is still experimental and does not yet support custom naming schemes.

@@ -33,7 +33,8 @@ import org.jdbi.v3.core.generic.GenericTypes;
 import org.jdbi.v3.core.mapper.reflect.internal.PojoProperties.PojoProperty;
 import org.jdbi.v3.core.qualifier.QualifiedType;
 import org.jdbi.v3.core.qualifier.Qualifiers;
-import org.jdbi.v3.core.statement.UnableToCreateStatementException;
+
+import static org.jdbi.v3.core.internal.Throwables.throwingOnlyUnchecked;
 
 public class ImmutablesTaster implements Function<Type, Optional<? extends PojoProperties<?>>>, JdbiConfig<ImmutablesTaster> {
 
@@ -71,16 +72,6 @@ public class ImmutablesTaster implements Function<Type, Optional<? extends PojoP
 
     static MethodHandle alwaysSet() {
         return MethodHandles.dropArguments(MethodHandles.constant(boolean.class, true), 0, Object.class);
-    }
-
-    private static <T> T guard(ThrowingSupplier<T> supp) {
-        try {
-            return supp.get();
-        } catch (RuntimeException | Error e) { // NOPMD
-            throw e;
-        } catch (Throwable t) {
-            throw new UnableToCreateStatementException("Couldn't execute Immutables method", t);
-        }
     }
 
     abstract static class BasePojoProperties<T> extends PojoProperties<T> {
@@ -157,17 +148,17 @@ public class ImmutablesTaster implements Function<Type, Optional<? extends PojoP
 
         @Override
         public PojoBuilder<T> create() {
-            final Object builder = guard(builderFactory::invoke);
+            final Object builder = throwingOnlyUnchecked(builderFactory::invoke);
             return new PojoBuilder<T>() {
                 @Override
                 public void set(String property, Object value) {
-                    guard(() -> properties.get(property).setter.invoke(builder, value));
+                    throwingOnlyUnchecked(() -> properties.get(property).setter.invoke(builder, value));
                 }
 
                 @SuppressWarnings("unchecked")
                 @Override
                 public T build() {
-                    return (T) guard(() -> builderBuild.invoke(builder));
+                    return (T) throwingOnlyUnchecked(() -> builderBuild.invoke(builder));
                 }
             };
         }
@@ -222,11 +213,11 @@ public class ImmutablesTaster implements Function<Type, Optional<? extends PojoP
 
         @Override
         public PojoBuilder<T> create() {
-            final Object instance = guard(create::invoke);
+            final Object instance = throwingOnlyUnchecked(create::invoke);
             return new PojoBuilder<T>() {
                 @Override
                 public void set(String property, Object value) {
-                    guard(() -> properties.get(property).setter.invoke(instance, value));
+                    throwingOnlyUnchecked(() -> properties.get(property).setter.invoke(instance, value));
                 }
 
                 @SuppressWarnings("unchecked")
@@ -272,7 +263,7 @@ public class ImmutablesTaster implements Function<Type, Optional<? extends PojoP
 
         @Override
         public Object get(T pojo) {
-            return guard(() -> {
+            return throwingOnlyUnchecked(() -> {
                 if (Boolean.TRUE.equals(isSet.invoke(pojo))) {
                     return getter.invoke(pojo);
                 } else {
@@ -280,9 +271,5 @@ public class ImmutablesTaster implements Function<Type, Optional<? extends PojoP
                 }
             });
         }
-    }
-
-    interface ThrowingSupplier<T> {
-        T get() throws Throwable;
     }
 }
