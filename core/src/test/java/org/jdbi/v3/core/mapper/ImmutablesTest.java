@@ -56,7 +56,7 @@ public class ImmutablesTest {
 
         assertThat(
             h.createUpdate("insert into train(name, carriages, observation_car) values (:name, :carriages, :observationCar)")
-                .bindBean(ImmutableTrain.builder().name("Zephyr").carriages(8).observationCar(true).build())
+                .bindProperties(ImmutableTrain.builder().name("Zephyr").carriages(8).observationCar(true).build())
                 .execute())
             .isEqualTo(1);
 
@@ -73,7 +73,7 @@ public class ImmutablesTest {
     public void parameterizedTest() {
         assertThat(
             h.createUpdate("insert into immutables(t, x) values (:t, :x)")
-                .bindBean(ImmutableSubValue.<String, Integer>builder().t(42).x("foo").build())
+                .bindProperties(ImmutableSubValue.<String, Integer>builder().t(42).x("foo").build())
                 .execute())
             .isEqualTo(1);
 
@@ -109,7 +109,7 @@ public class ImmutablesTest {
         h.execute("create table fbb (id serial, foo varchar, bar int, baz real)");
 
         assertThat(h.createUpdate("insert into fbb (id, foo, bar, baz) values (:id, :foo, :bar, :baz)")
-                .bindBean(ModifiableFooBarBaz.create().setFoo("foo").setBar(42).setBaz(1.0))
+                .bindProperties(ModifiableFooBarBaz.create().setFoo("foo").setBar(42).setBaz(1.0))
                 .execute())
             .isEqualTo(1);
 

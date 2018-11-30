@@ -27,10 +27,10 @@ import org.jdbi.v3.core.mapper.Nested;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.mapper.RowMapperFactory;
 import org.jdbi.v3.core.mapper.SingleColumnMapper;
+import org.jdbi.v3.core.mapper.reflect.internal.BeanTaster;
 import org.jdbi.v3.core.mapper.reflect.internal.PojoProperties;
 import org.jdbi.v3.core.mapper.reflect.internal.PojoProperties.PojoBuilder;
 import org.jdbi.v3.core.mapper.reflect.internal.PojoProperties.PojoProperty;
-import org.jdbi.v3.core.mapper.reflect.internal.PojoPropertiesFactory;
 import org.jdbi.v3.core.statement.StatementContext;
 
 import static org.jdbi.v3.core.mapper.reflect.ReflectionMapperUtil.anyColumnsStartWithPrefix;
@@ -47,7 +47,7 @@ import static org.jdbi.v3.core.mapper.reflect.ReflectionMapperUtil.getColumnName
  * The mapped class must have a default constructor.
  */
 public class BeanMapper<T> implements RowMapper<T> {
-    private static final String DEFAULT_PREFIX = "";
+    protected static final String DEFAULT_PREFIX = "";
 
     private static final String NO_MATCHING_COLUMNS =
         "Mapping bean type %s didn't find any matching columns in result set";
@@ -99,11 +99,11 @@ public class BeanMapper<T> implements RowMapper<T> {
         return new BeanMapper<>(type, prefix);
     }
 
-    private final Class<T> type;
-    private final String prefix;
+    protected final Class<T> type;
+    protected final String prefix;
     private final Map<PojoProperty<T>, BeanMapper<?>> nestedMappers = new ConcurrentHashMap<>();
 
-    private BeanMapper(Class<T> type, String prefix) {
+    protected BeanMapper(Class<T> type, String prefix) {
         this.type = type;
         this.prefix = prefix.toLowerCase();
     }
@@ -137,7 +137,7 @@ public class BeanMapper<T> implements RowMapper<T> {
                                                List<String> columnNames,
                                                List<ColumnNameMatcher> columnNameMatchers,
                                                List<String> unmatchedColumns) {
-        final PojoProperties<T> info = ctx.getConfig(PojoPropertiesFactory.class).propertiesOf(type);
+        final PojoProperties<T> info = findProperties(ctx);
         final List<RowMapper<?>> mappers = new ArrayList<>();
         final List<PojoProperty<T>> properties = new ArrayList<>();
 
@@ -189,6 +189,15 @@ public class BeanMapper<T> implements RowMapper<T> {
 
             return pojo.build();
         });
+    }
+
+    /**
+     * Find properties for the object.
+     * @param ctx the statement context
+     */
+    @SuppressWarnings("unchecked")
+    protected PojoProperties<T> findProperties(StatementContext ctx) {
+        return (PojoProperties<T>) BeanTaster.taste(type);
     }
 
     private String debugName(PojoProperty<T> p) {

@@ -55,7 +55,7 @@ public class PojoPropertiesFactory implements JdbiConfig<PojoPropertiesFactory> 
             } catch (Throwable t) {
                 LoggerFactory.getLogger(Jdbi.class).trace("Not loading Immutables support", t);
             }
-            tasters.add(new BeanTaster());
+            tasters.add(BeanTaster.INSTANCE);
         }
     }
 

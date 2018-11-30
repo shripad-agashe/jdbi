@@ -19,8 +19,8 @@ import java.util.Optional;
 import org.jdbi.v3.core.config.ConfigRegistry;
 import org.jdbi.v3.core.config.JdbiConfig;
 import org.jdbi.v3.core.generic.GenericTypes;
-import org.jdbi.v3.core.mapper.reflect.BeanMapper;
 import org.jdbi.v3.core.mapper.reflect.internal.ImmutablesTaster;
+import org.jdbi.v3.core.mapper.reflect.internal.PropertiesMapper;
 import org.jdbi.v3.meta.Beta;
 
 /**
@@ -54,8 +54,8 @@ public class JdbiImmutables implements JdbiConfig<JdbiImmutables> {
             throw new IllegalArgumentException("Register the implemented Immutable type, not the specifying interface");
         }
         registry.get(ImmutablesTaster.class).register(defn, impl, modifiable);
-        final Optional<RowMapper<?>> immutableMapper = Optional.of(BeanMapper.of(impl));
-        final Optional<RowMapper<?>> modifiableMapper = Optional.ofNullable(modifiable).map(BeanMapper::of);
+        final Optional<RowMapper<?>> immutableMapper = Optional.of(PropertiesMapper.of(impl));
+        final Optional<RowMapper<?>> modifiableMapper = Optional.ofNullable(modifiable).map(PropertiesMapper::of);
         registry.get(RowMappers.class).register(new RowMapperFactory() {
             @Override
             public Optional<RowMapper<?>> build(Type type, ConfigRegistry config) {
