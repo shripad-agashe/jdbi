@@ -35,7 +35,6 @@ import net.jodah.expiringmap.ExpirationPolicy;
 import net.jodah.expiringmap.ExpiringMap;
 
 import org.jdbi.v3.core.generic.GenericTypes;
-import org.jdbi.v3.core.mapper.reflect.ColumnName;
 import org.jdbi.v3.core.qualifier.QualifiedType;
 import org.jdbi.v3.core.statement.UnableToCreateStatementException;
 
@@ -150,13 +149,7 @@ public class BeanTaster implements Function<Type, Optional<? extends PojoPropert
 
             @Override
             public String getName() {
-                return Stream.of(descriptor.getReadMethod(), descriptor.getWriteMethod())
-                        .filter(Objects::nonNull)
-                        .map(method -> method.getAnnotation(ColumnName.class))
-                        .filter(Objects::nonNull)
-                        .map(ColumnName::value)
-                        .findFirst()
-                        .orElseGet(descriptor::getName);
+                return descriptor.getName();
             }
 
             @Override

@@ -145,7 +145,7 @@ public class BeanMapper<T> implements RowMapper<T> {
             Nested anno = property.getAnnotation(Nested.class).orElse(null);
 
             if (anno == null) {
-                String paramName = prefix + property.getName();
+                String paramName = prefix + getName(property);
 
                 findColumnIndex(paramName, columnNames, columnNameMatchers, () -> debugName(property))
                     .ifPresent(index -> {
@@ -189,6 +189,12 @@ public class BeanMapper<T> implements RowMapper<T> {
 
             return pojo.build();
         });
+    }
+
+    private String getName(PojoProperty<T> property) {
+        return property.getAnnotation(ColumnName.class)
+                .map(ColumnName::value)
+                .orElseGet(property::getName);
     }
 
     /**
