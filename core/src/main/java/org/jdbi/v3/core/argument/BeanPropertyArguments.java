@@ -17,7 +17,7 @@ import java.util.Optional;
 
 import org.jdbi.v3.core.argument.internal.MethodReturnValueNamedArgumentFinder;
 import org.jdbi.v3.core.argument.internal.TypedValue;
-import org.jdbi.v3.core.mapper.reflect.internal.BeanTaster;
+import org.jdbi.v3.core.mapper.reflect.internal.BeanPropertiesFactory;
 import org.jdbi.v3.core.mapper.reflect.internal.PojoProperties;
 import org.jdbi.v3.core.mapper.reflect.internal.PojoProperties.PojoProperty;
 import org.jdbi.v3.core.statement.StatementContext;
@@ -35,7 +35,7 @@ public class BeanPropertyArguments extends MethodReturnValueNamedArgumentFinder 
      */
     public BeanPropertyArguments(String prefix, Object bean) {
         super(prefix, bean);
-        properties = BeanTaster.taste(obj.getClass());
+        properties = BeanPropertiesFactory.propertiesFor(obj.getClass());
     }
 
     @Override

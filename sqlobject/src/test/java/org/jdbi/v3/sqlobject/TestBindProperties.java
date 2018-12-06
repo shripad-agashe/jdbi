@@ -18,7 +18,7 @@ import java.util.List;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.mapper.ImmutableTrain;
 import org.jdbi.v3.core.mapper.ImmutablesTest.Train;
-import org.jdbi.v3.core.mapper.JdbiImmutables;
+import org.jdbi.v3.core.mapper.reflect.ImmutablesMapperFactory;
 import org.jdbi.v3.core.rule.H2DatabaseRule;
 import org.jdbi.v3.sqlobject.customizer.BindProperties;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
@@ -40,7 +40,7 @@ public class TestBindProperties {
     @Before
     public void setUp() {
         h = dbRule.getSharedHandle();
-        h.getConfig(JdbiImmutables.class).register(Train.class, ImmutableTrain.class);
+        h.registerRowMapper(ImmutablesMapperFactory.mapImmutable(Train.class, ImmutableTrain.class, ImmutableTrain::builder));
         h.execute("create table train (name varchar, carriages int, observation_car boolean)");
 
         dao = h.attach(Dao.class);
@@ -48,8 +48,6 @@ public class TestBindProperties {
 
     @Test
     public void testBindBean() {
-        h.getConfig(JdbiImmutables.class).register(Train.class, ImmutableTrain.class);
-
         assertThat(
             dao.insert(ImmutableTrain.builder()
                 .name("Zephyr")

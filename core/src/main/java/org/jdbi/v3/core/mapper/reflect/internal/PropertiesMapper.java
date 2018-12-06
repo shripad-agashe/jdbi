@@ -16,31 +16,25 @@ package org.jdbi.v3.core.mapper.reflect.internal;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.mapper.RowMapperFactory;
 import org.jdbi.v3.core.mapper.reflect.BeanMapper;
-import org.jdbi.v3.core.statement.StatementContext;
 
 public class PropertiesMapper<T> extends BeanMapper<T> {
-    private PropertiesMapper(Class<T> type, String prefix) {
-        super(type, prefix);
+    private PropertiesMapper(Class<T> type, PojoProperties<T> properties, String prefix) {
+        super(type, properties, prefix);
     }
 
-    public static RowMapperFactory factory(Class<?> type) {
-        return RowMapperFactory.of(type, PropertiesMapper.of(type));
+    public static <T> RowMapperFactory factory(Class<T> type, PojoProperties<T> properties) {
+        return RowMapperFactory.of(type, PropertiesMapper.of(type, properties));
     }
 
-    public static RowMapperFactory factory(Class<?> type, String prefix) {
-        return RowMapperFactory.of(type, PropertiesMapper.of(type, prefix));
+    public static <T> RowMapperFactory factory(Class<T> type, PojoProperties<T> properties, String prefix) {
+        return RowMapperFactory.of(type, PropertiesMapper.of(type, properties, prefix));
     }
 
-    public static <T> RowMapper<T> of(Class<T> type) {
-        return PropertiesMapper.of(type, DEFAULT_PREFIX);
+    public static <T> RowMapper<T> of(Class<T> type, PojoProperties<T> properties) {
+        return PropertiesMapper.of(type, properties, DEFAULT_PREFIX);
     }
 
-    public static <T> RowMapper<T> of(Class<T> type, String prefix) {
-        return new PropertiesMapper<>(type, prefix);
-    }
-
-    @Override
-    protected PojoProperties<T> findProperties(StatementContext ctx) {
-        return ctx.getConfig(PojoPropertiesFactory.class).propertiesOf(type);
+    public static <T> RowMapper<T> of(Class<T> type, PojoProperties<T> properties, String prefix) {
+        return new PropertiesMapper<>(type, properties, prefix);
     }
 }

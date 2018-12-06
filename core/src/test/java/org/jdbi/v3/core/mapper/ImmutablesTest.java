@@ -20,6 +20,7 @@ import java.util.OptionalInt;
 import org.immutables.value.Value;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.generic.GenericType;
+import org.jdbi.v3.core.mapper.reflect.ImmutablesMapperFactory;
 import org.jdbi.v3.core.rule.H2DatabaseRule;
 import org.junit.Before;
 import org.junit.Rule;
@@ -38,7 +39,7 @@ public class ImmutablesTest {
         h = dbRule.getSharedHandle();
         h.execute("create table immutables (t int, x varchar)");
 
-        h.getConfig(JdbiImmutables.class).register(SubValue.class, ImmutableSubValue.class);
+        h.registerRowMapper(ImmutablesMapperFactory.mapImmutable(SubValue.class, ImmutableSubValue.class, ImmutableSubValue::builder));
     }
 
     // tag::example[]
@@ -52,7 +53,7 @@ public class ImmutablesTest {
     @Test
     public void simpleTest() {
         h.execute("create table train (name varchar, carriages int, observation_car boolean)");
-        h.getConfig(JdbiImmutables.class).register(Train.class, ImmutableTrain.class);
+        h.registerRowMapper(ImmutablesMapperFactory.mapImmutable(Train.class, ImmutableTrain.class, ImmutableTrain::builder));
 
         assertThat(
             h.createUpdate("insert into train(name, carriages, observation_car) values (:name, :carriages, :observationCar)")
@@ -105,7 +106,8 @@ public class ImmutablesTest {
 
     @Test
     public void testModifiable() {
-        h.getConfig(JdbiImmutables.class).register(FooBarBaz.class, ImmutableFooBarBaz.class, ModifiableFooBarBaz.class);
+        h.registerRowMapper(ImmutablesMapperFactory.mapImmutable(FooBarBaz.class, ImmutableFooBarBaz.class, ImmutableFooBarBaz::builder));
+        h.registerRowMapper(ImmutablesMapperFactory.mapModifiable(FooBarBaz.class, ModifiableFooBarBaz.class, ModifiableFooBarBaz::create));
         h.execute("create table fbb (id serial, foo varchar, bar int, baz real)");
 
         assertThat(h.createUpdate("insert into fbb (id, foo, bar, baz) values (:id, :foo, :bar, :baz)")

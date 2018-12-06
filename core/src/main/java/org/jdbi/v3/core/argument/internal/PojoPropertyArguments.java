@@ -17,9 +17,11 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.jdbi.v3.core.argument.NamedArgumentFinder;
+import org.jdbi.v3.core.mapper.RowMapper;
+import org.jdbi.v3.core.mapper.reflect.BeanMapper;
 import org.jdbi.v3.core.mapper.reflect.internal.PojoProperties.PojoProperty;
-import org.jdbi.v3.core.mapper.reflect.internal.PojoPropertiesFactory;
 import org.jdbi.v3.core.statement.StatementContext;
+import org.jdbi.v3.core.statement.UnableToCreateStatementException;
 
 /**
  * Inspect a object and bind parameters via {@link PojoPropertiesFactory}.
@@ -36,7 +38,12 @@ public class PojoPropertyArguments extends MethodReturnValueNamedArgumentFinder 
     public PojoPropertyArguments(String prefix, Object bean, StatementContext ctx) {
         super(prefix, bean);
         this.ctx = ctx;
-        properties = ctx.getConfig(PojoPropertiesFactory.class).propertiesOf(bean.getClass()).getProperties();
+        final RowMapper<? extends Object> mapper = ctx.findRowMapperFor(bean.getClass())
+                .orElseThrow(() -> new UnableToCreateStatementException("Couldn't find registered property mapper for " + bean.getClass()));
+        if (!(mapper instanceof BeanMapper<?>)) {
+            throw new UnableToCreateStatementException("Registered mapper for " + bean.getClass() + " is not a property based mapper");
+        }
+        properties = ((BeanMapper<?>) mapper).getBeanInfo().getProperties();
     }
 
     @Override

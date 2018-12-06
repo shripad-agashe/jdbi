@@ -3699,7 +3699,7 @@ instance:
 jdbi.installPlugin(new H2DatabasePlugin());
 ----
 
-== Immutables
+=== Immutables
 
 link:https://immutables.github.io/[Immutables^] is an annotation processor that generates
 value types based on simple interface descriptions.  The value types naturally map very well

@@ -27,11 +27,12 @@ import org.jdbi.v3.core.mapper.Nested;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.mapper.RowMapperFactory;
 import org.jdbi.v3.core.mapper.SingleColumnMapper;
-import org.jdbi.v3.core.mapper.reflect.internal.BeanTaster;
+import org.jdbi.v3.core.mapper.reflect.internal.BeanPropertiesFactory;
 import org.jdbi.v3.core.mapper.reflect.internal.PojoProperties;
 import org.jdbi.v3.core.mapper.reflect.internal.PojoProperties.PojoBuilder;
 import org.jdbi.v3.core.mapper.reflect.internal.PojoProperties.PojoProperty;
 import org.jdbi.v3.core.statement.StatementContext;
+import org.jdbi.v3.meta.Beta;
 
 import static org.jdbi.v3.core.mapper.reflect.ReflectionMapperUtil.anyColumnsStartWithPrefix;
 import static org.jdbi.v3.core.mapper.reflect.ReflectionMapperUtil.findColumnIndex;
@@ -101,10 +102,17 @@ public class BeanMapper<T> implements RowMapper<T> {
 
     protected final Class<T> type;
     protected final String prefix;
+    private final PojoProperties<T> beanInfo;
     private final Map<PojoProperty<T>, BeanMapper<?>> nestedMappers = new ConcurrentHashMap<>();
 
+    @SuppressWarnings("unchecked")
     protected BeanMapper(Class<T> type, String prefix) {
+        this(type, (PojoProperties<T>) BeanPropertiesFactory.propertiesFor(type), prefix);
+    }
+
+    protected BeanMapper(Class<T> type, PojoProperties<T> properties, String prefix) {
         this.type = type;
+        this.beanInfo = properties;
         this.prefix = prefix.toLowerCase();
     }
 
@@ -137,11 +145,10 @@ public class BeanMapper<T> implements RowMapper<T> {
                                                List<String> columnNames,
                                                List<ColumnNameMatcher> columnNameMatchers,
                                                List<String> unmatchedColumns) {
-        final PojoProperties<T> info = findProperties(ctx);
         final List<RowMapper<?>> mappers = new ArrayList<>();
-        final List<PojoProperty<T>> properties = new ArrayList<>();
+        final List<PojoProperty<T>> propList = new ArrayList<>();
 
-        for (PojoProperty<T> property : info.getProperties().values()) {
+        for (PojoProperty<T> property : beanInfo.getProperties().values()) {
             Nested anno = property.getAnnotation(Nested.class).orElse(null);
 
             if (anno == null) {
@@ -153,7 +160,7 @@ public class BeanMapper<T> implements RowMapper<T> {
                             .orElse((r, n, c) -> r.getObject(n));
 
                         mappers.add(new SingleColumnMapper<>(mapper, index + 1));
-                        properties.add(property);
+                        propList.add(property);
 
                         unmatchedColumns.remove(columnNames.get(index));
                     });
@@ -165,7 +172,7 @@ public class BeanMapper<T> implements RowMapper<T> {
                         .specialize0(ctx, columnNames, columnNameMatchers, unmatchedColumns)
                         .ifPresent(nestedMapper -> {
                             mappers.add(nestedMapper);
-                            properties.add(property);
+                            propList.add(property);
                         });
                 }
             }
@@ -176,11 +183,11 @@ public class BeanMapper<T> implements RowMapper<T> {
         }
 
         return Optional.of((r, c) -> {
-            final PojoBuilder<T> pojo = info.create();
+            final PojoBuilder<T> pojo = beanInfo.create();
 
             for (int i = 0; i < mappers.size(); i++) {
                 RowMapper<?> mapper = mappers.get(i);
-                PojoProperty<T> property = properties.get(i);
+                PojoProperty<T> property = propList.get(i);
 
                 Object value = mapper.map(r, ctx);
 
@@ -191,19 +198,15 @@ public class BeanMapper<T> implements RowMapper<T> {
         });
     }
 
+    @Beta
+    public PojoProperties<T> getBeanInfo() {
+        return beanInfo;
+    }
+
     private String getName(PojoProperty<T> property) {
         return property.getAnnotation(ColumnName.class)
                 .map(ColumnName::value)
                 .orElseGet(property::getName);
-    }
-
-    /**
-     * Find properties for the object.
-     * @param ctx the statement context
-     */
-    @SuppressWarnings("unchecked")
-    protected PojoProperties<T> findProperties(StatementContext ctx) {
-        return (PojoProperties<T>) BeanTaster.taste(type);
     }
 
     private String debugName(PojoProperty<T> p) {

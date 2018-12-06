@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import net.jodah.expiringmap.ExpirationPolicy;
@@ -40,9 +39,7 @@ import org.jdbi.v3.core.statement.UnableToCreateStatementException;
 
 import static org.jdbi.v3.core.qualifier.Qualifiers.getQualifiers;
 
-public class BeanTaster implements Function<Type, Optional<? extends PojoProperties<?>>> {
-    public static final BeanTaster INSTANCE = new BeanTaster();
-
+public class BeanPropertiesFactory {
     private static final Map<Type, ? extends PojoProperties<?>> CLASS_PROPERTY_DESCRIPTORS = ExpiringMap
             .builder()
             .expiration(10, TimeUnit.MINUTES)
@@ -67,15 +64,9 @@ public class BeanTaster implements Function<Type, Optional<? extends PojoPropert
     private static final String REFLECTION_ILLEGAL_ARGUMENT_EXCEPTION =
         "Write method of %s for property %s is not compatible with the value passed";
 
-    private BeanTaster() {}
+    private BeanPropertiesFactory() {}
 
-    @Override
-    public Optional<? extends PojoProperties<?>> apply(Type t) {
-        // BeanTaster is the fallback and throws rather than chaining on.
-        return Optional.of(taste(t));
-    }
-
-    public static PojoProperties<?> taste(Type t) {
+    public static PojoProperties<?> propertiesFor(Type t) {
         return CLASS_PROPERTY_DESCRIPTORS.get(t);
     }
 

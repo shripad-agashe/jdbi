@@ -20,15 +20,16 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.stream.Stream;
+import java.util.function.Supplier;
 
-import org.jdbi.v3.core.config.JdbiConfig;
+import net.jodah.expiringmap.ExpirationPolicy;
+import net.jodah.expiringmap.ExpiringMap;
+
 import org.jdbi.v3.core.generic.GenericTypes;
 import org.jdbi.v3.core.mapper.reflect.internal.PojoProperties.PojoProperty;
 import org.jdbi.v3.core.qualifier.QualifiedType;
@@ -36,54 +37,45 @@ import org.jdbi.v3.core.qualifier.Qualifiers;
 
 import static org.jdbi.v3.core.internal.Throwables.throwingOnlyUnchecked;
 
-public class ImmutablesTaster implements Function<Type, Optional<? extends PojoProperties<?>>>, JdbiConfig<ImmutablesTaster> {
+public class ImmutablesPropertiesFactory {
 
-    private final Map<Class<?>, Function<Type, PojoProperties<?>>> registered = new HashMap<>();
+    private static final Map<Type, PojoProperties<?>> IMMUTABLE_PROPERTIES = ExpiringMap
+            .builder()
+            .expiration(10, TimeUnit.MINUTES)
+            .expirationPolicy(ExpirationPolicy.ACCESSED)
+            .build();
 
-    public ImmutablesTaster() {}
+    private static final Map<Type, PojoProperties<?>> MODIFIABLE_PROPERTIES = ExpiringMap
+            .builder()
+            .expiration(10, TimeUnit.MINUTES)
+            .expirationPolicy(ExpirationPolicy.ACCESSED)
+            .build();
 
-    private ImmutablesTaster(ImmutablesTaster other) {
-        registered.putAll(other.registered);
+    private ImmutablesPropertiesFactory() {}
+
+    @SuppressWarnings("unchecked")
+    public static <T, B> Function<Type, PojoProperties<T>> immutable(Class<T> defn, Supplier<B> builder) {
+        return t -> (PojoProperties<T>) IMMUTABLE_PROPERTIES.computeIfAbsent(t, x -> new ImmutablePojoProperties<>(t, defn, builder));
     }
 
-    @Override
-    public ImmutablesTaster createCopy() {
-        return new ImmutablesTaster(this);
-    }
-
-    public <T> void register(Class<T> iface, Class<? extends T> impl, Class<? extends T> modifiable) {
-        final Function<Type, PojoProperties<?>> immutable = t -> new ImmutablePojoProperties<>(t, iface, impl);
-        registered.put(iface, immutable);
-        registered.put(impl, immutable);
-        if (modifiable != null) {
-            registered.put(modifiable, t -> new ModifiablePojoProperties<>(t, iface, modifiable));
-        }
-    }
-
-    @Override
-    public Optional<? extends PojoProperties<?>> apply(Type t) {
-        final Class<?> erased = GenericTypes.getErasedType(t);
-        return Stream.concat(Stream.of(erased), Arrays.stream(erased.getInterfaces()))
-                .map(registered::get)
-                .filter(Objects::nonNull)
-                .map(f -> f.apply(t))
-                .findAny();
+    @SuppressWarnings("unchecked")
+    public static <T, M extends T> Function<Type, PojoProperties<T>> modifiable(Class<T> defn, Supplier<M> constructor) {
+        return t -> (PojoProperties<T>) MODIFIABLE_PROPERTIES.computeIfAbsent(t, x -> new ModifiablePojoProperties<>(t, defn, constructor));
     }
 
     static MethodHandle alwaysSet() {
         return MethodHandles.dropArguments(MethodHandles.constant(boolean.class, true), 0, Object.class);
     }
 
-    abstract static class BasePojoProperties<T> extends PojoProperties<T> {
+    abstract static class BasePojoProperties<T, B> extends PojoProperties<T> {
         protected final Map<String, ImmutablesPojoProperty<T>> properties = new HashMap<>();
         protected final Class<?> defn;
-        protected final Class<?> impl;
+        protected final Supplier<?> builder;
 
-        BasePojoProperties(Type type, Class<?> defn, Class<?> impl) {
+        BasePojoProperties(Type type, Class<?> defn, Supplier<B> builder) {
             super(type);
             this.defn = defn;
-            this.impl = impl;
-            init();
+            this.builder = builder;
             for (Method m : defn.getMethods()) {
                 if (isProperty(m)) {
                     final String name = m.getName();
@@ -91,8 +83,6 @@ public class ImmutablesTaster implements Function<Type, Optional<? extends PojoP
                 }
             }
         }
-
-        protected abstract void init();
 
         private boolean isProperty(Method m) {
             return m.getParameterCount() == 0
@@ -109,86 +99,83 @@ public class ImmutablesTaster implements Function<Type, Optional<? extends PojoP
         protected abstract ImmutablesPojoProperty<T> createProperty(String name, Method m);
     }
 
-    static class ImmutablePojoProperties<T> extends BasePojoProperties<T> {
-        private Class<?> builderClass;
-        private MethodHandle builderFactory;
+    static class ImmutablePojoProperties<T, B> extends BasePojoProperties<T, B> {
         private MethodHandle builderBuild;
 
-        ImmutablePojoProperties(Type type, Class<?> defn, Class<?> impl) {
-            super(type, defn, impl);
-        }
-
-        @Override
-        protected void init() {
+        ImmutablePojoProperties(Type type, Class<?> defn, Supplier<B> builder) {
+            super(type, defn, builder);
             try {
-                final Method builderMethod = impl.getMethod("builder");
-                builderFactory = MethodHandles.lookup().unreflect(builderMethod);
-                builderClass = builderFactory.type().returnType();
-                builderBuild = MethodHandles.lookup().findVirtual(builderClass, "build", MethodType.methodType(impl));
+                builderBuild = MethodHandles.lookup().unreflect(builder.get().getClass().getMethod("build"));
             } catch (NoSuchMethodException | IllegalAccessException e) {
-               throw new IllegalArgumentException("Failed to inspect Immutables " + defn, e);
+                throw new IllegalArgumentException("Failed to inspect Immutables " + defn, e);
             }
         }
-
         @Override
         protected ImmutablesPojoProperty<T> createProperty(String name, Method m) {
-            final Type propertyType = GenericTypes.resolveType(m.getGenericReturnType(), getType());
+            final Class<?> builderClass = builder.get().getClass();
             try {
+                final Type propertyType = GenericTypes.resolveType(m.getGenericReturnType(), getType());
                 return new ImmutablesPojoProperty<T>(
                         name,
                         QualifiedType.of(propertyType, Qualifiers.getQualifiers(m)),
                         m,
                         alwaysSet(),
                         MethodHandles.lookup().unreflect(m),
-                        MethodHandles.lookup().findVirtual(builderClass, name, MethodType.methodType(builderClass, GenericTypes.getErasedType(propertyType))));
+                        findBuilderSetter(builderClass, name, propertyType));
             } catch (IllegalAccessException | NoSuchMethodException e) {
                 throw new IllegalArgumentException("Failed to inspect method " + m, e);
             }
         }
 
+        private MethodHandle findBuilderSetter(final Class<?> builderClass, String name, Type type)
+        throws IllegalAccessException, NoSuchMethodException {
+            final NoSuchMethodException failure;
+            try {
+                return MethodHandles.lookup().unreflect(builderClass.getMethod(name, GenericTypes.getErasedType(type)));
+            } catch (NoSuchMethodException e) {
+                failure = e;
+            }
+            for (Method m : builderClass.getMethods()) {
+                if (m.getName().equals(name) && m.getParameterCount() == 1) {
+                    return MethodHandles.lookup().unreflect(m);
+                }
+            }
+            throw failure;
+        }
+
         @Override
         public PojoBuilder<T> create() {
-            final Object builder = throwingOnlyUnchecked(builderFactory::invoke);
+            final Object b = builder.get();
             return new PojoBuilder<T>() {
                 @Override
                 public void set(String property, Object value) {
-                    throwingOnlyUnchecked(() -> properties.get(property).setter.invoke(builder, value));
+                    throwingOnlyUnchecked(() -> properties.get(property).setter.invoke(b, value));
                 }
 
                 @SuppressWarnings("unchecked")
                 @Override
                 public T build() {
-                    return (T) throwingOnlyUnchecked(() -> builderBuild.invoke(builder));
+                    return (T) throwingOnlyUnchecked(() -> builderBuild.invoke(b));
                 }
             };
         }
     }
 
-    static class ModifiablePojoProperties<T> extends BasePojoProperties<T> {
-        private MethodHandle create;
-
-        ModifiablePojoProperties(Type type, Class<?> defn, Class<?> impl) {
-            super(type, defn, impl);
-        }
-
-        @Override
-        protected void init() {
-            try {
-                create = MethodHandles.lookup().findStatic(impl, "create", MethodType.methodType(impl));
-            } catch (NoSuchMethodException | IllegalAccessException e) {
-               throw new IllegalArgumentException("Failed to inspect Immutables " + defn, e);
-            }
+    static class ModifiablePojoProperties<T, M extends T> extends BasePojoProperties<T, M> {
+        ModifiablePojoProperties(Type type, Class<?> defn, Supplier<M> constructor) {
+            super(type, defn, constructor);
         }
 
         @Override
         protected ImmutablesPojoProperty<T> createProperty(String name, Method m) {
+            final Class<M> impl = implClass();
             final Type propertyType = GenericTypes.resolveType(m.getGenericReturnType(), getType());
             try {
                 return new ImmutablesPojoProperty<T>(
                         name,
                         QualifiedType.of(propertyType, Qualifiers.getQualifiers(m)),
                         m,
-                        isSetMethod(name),
+                        isSetMethod(impl, name),
                         MethodHandles.lookup().unreflect(m),
                         MethodHandles.lookup().findVirtual(impl, setterName(name), MethodType.methodType(impl, GenericTypes.getErasedType(propertyType))));
             } catch (IllegalAccessException | NoSuchMethodException e) {
@@ -196,7 +183,12 @@ public class ImmutablesTaster implements Function<Type, Optional<? extends PojoP
             }
         }
 
-        private MethodHandle isSetMethod(String name) {
+        @SuppressWarnings("unchecked")
+        private Class<M> implClass() {
+            return (Class<M>) builder.get().getClass();
+        }
+
+        private MethodHandle isSetMethod(Class<M> impl, String name) {
             try {
                 return MethodHandles.lookup().findVirtual(impl, name + "IsSet", MethodType.methodType(boolean.class));
             } catch (NoSuchMethodException e) {
@@ -213,7 +205,7 @@ public class ImmutablesTaster implements Function<Type, Optional<? extends PojoP
 
         @Override
         public PojoBuilder<T> create() {
-            final Object instance = throwingOnlyUnchecked(create::invoke);
+            final Object instance = builder.get();
             return new PojoBuilder<T>() {
                 @Override
                 public void set(String property, Object value) {
