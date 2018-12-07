@@ -14,7 +14,7 @@
 package org.jdbi.v3.postgres;
 
 import java.util.List;
-import java.util.SortedMap;
+import java.util.Map;
 
 import org.immutables.value.Value;
 import org.jdbi.v3.core.Handle;
@@ -54,8 +54,8 @@ public class TestImmutablesHStore {
     @Value.Immutable
     @Value.Style(overshadowImplementation = true)
     public interface Mappy {
-        @Value.NaturalOrder
-        SortedMap<String, String> numbers();
+        @HStore
+        Map<String, String> numbers();
 
         class Builder extends ImmutableMappy.Builder {}
 
