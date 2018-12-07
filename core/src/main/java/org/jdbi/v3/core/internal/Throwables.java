@@ -22,9 +22,11 @@ public class Throwables {
     }
 
     /**
-     * conservatively unchecks {@code t} and throws it.
+     * Conservatively unchecks {@code t} and throws it.
      *
      * Returns a bogus exception for compiler satisfaction: caller should always throw the return value even though you'll never get it.
+     * @param t the thrown throwable
+     * @return never returns normally
      */
     public static RuntimeException throwOnlyUnchecked(Throwable t) {
         if (t instanceof Error) {
@@ -43,7 +45,11 @@ public class Throwables {
     }
 
     /**
-     * executes a runnable that could throw a Throwable and conservatively unchecks it so you don't need to catch anything.
+     * Executes a runnable that could throw a Throwable and conservatively unchecks it so you don't need to catch anything.
+     *
+     * @param <T> the result type
+     * @param dangerous the dangerous runnable
+     * @return the result
      */
     public static <T> T throwingOnlyUnchecked(DangerousRunnable<T> dangerous) {
         try {
@@ -54,11 +60,14 @@ public class Throwables {
     }
 
     /**
-     * conservatively reduces {@code t} to an Exception and throws it.
+     * Conservatively reduces {@code t} to an Exception and throws it.
      *
      * Returns a bogus exception for compiler satisfaction: caller should always throw the return value even though you'll never get it.
      *
      * @deprecated kinda icky thing to do
+     * @param t the thrown exception
+     * @return never returns normally
+     * @throws Exception always
      */
     @Deprecated
     public static Exception throwOnlyException(Throwable t) throws Exception {
@@ -77,6 +86,10 @@ public class Throwables {
      * executes a runnable that could throw a Throwable and conservatively reduces it to an Exception so you don't need to catch Throwable.
      *
      * @deprecated kinda icky thing to do
+     * @param <T> the result type
+     * @param dangerous the dangerous operation
+     * @return the result
+     * @throws Exception always
      */
     @Deprecated
     public static <T> T throwingOnlyException(DangerousRunnable<T> dangerous) throws Exception {
