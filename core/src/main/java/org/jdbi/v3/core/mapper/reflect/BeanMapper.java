@@ -157,7 +157,7 @@ public class BeanMapper<T> implements RowMapper<T> {
                 findColumnIndex(paramName, columnNames, columnNameMatchers, () -> debugName(property))
                     .ifPresent(index -> {
                         ColumnMapper<?> mapper = ctx.findColumnMapperFor(property.getQualifiedType())
-                            .orElse((r, n, c) -> r.getObject(n));
+                            .orElseGet(() -> defaultColumnMapper(property));
 
                         mappers.add(new SingleColumnMapper<>(mapper, index + 1));
                         propList.add(property);
@@ -196,6 +196,10 @@ public class BeanMapper<T> implements RowMapper<T> {
 
             return pojo.build();
         });
+    }
+
+    protected ColumnMapper<?> defaultColumnMapper(PojoProperty<T> property) {
+        return (r, n, c) -> r.getObject(n);
     }
 
     @Beta

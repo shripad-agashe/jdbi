@@ -13,9 +13,12 @@
  */
 package org.jdbi.v3.core.mapper.reflect.internal;
 
+import org.jdbi.v3.core.mapper.ColumnMapper;
+import org.jdbi.v3.core.mapper.NoSuchMapperException;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.mapper.RowMapperFactory;
 import org.jdbi.v3.core.mapper.reflect.BeanMapper;
+import org.jdbi.v3.core.mapper.reflect.internal.PojoProperties.PojoProperty;
 
 public class PropertiesMapper<T> extends BeanMapper<T> {
     private PropertiesMapper(Class<T> type, PojoProperties<T> properties, String prefix) {
@@ -36,5 +39,11 @@ public class PropertiesMapper<T> extends BeanMapper<T> {
 
     public static <T> RowMapper<T> of(Class<T> type, PojoProperties<T> properties, String prefix) {
         return new PropertiesMapper<>(type, properties, prefix);
+    }
+
+    @Override
+    protected ColumnMapper<?> defaultColumnMapper(PojoProperty<T> property) {
+        throw new NoSuchMapperException(String.format(
+                "Couldn't find mapper for property '%s' of type '%s' from %s", property.getName(), property.getQualifiedType(), type));
     }
 }
