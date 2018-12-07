@@ -52,7 +52,7 @@ public class ImmutablesMapperFactory<T> implements RowMapperFactory {
     @Override
     public Optional<RowMapper<?>> build(Type type, ConfigRegistry config) {
         Class<?> erasedType = GenericTypes.getErasedType(type);
-        if (defn == erasedType || impl == erasedType) {
+        if (defn.equals(erasedType) || impl.equals(erasedType)) {
             return Optional.of(PropertiesMapper.of((Class<T>) erasedType, properties.apply(type)));
         }
         return Optional.empty();
