@@ -40,6 +40,8 @@
     </licenses>
 
     <properties>
+        <!-- because shade fills out dependency versions in the reduced pom -->
+        <basepom.check.phase-dependency-management>validate</basepom.check.phase-dependency-management>
         <basepom.check.phase-license>validate</basepom.check.phase-license>
     </properties>
 
@@ -210,6 +212,7 @@
 
                             <!-- strip unused shaded classes -->
                             <minimizeJar>true</minimizeJar>
+                            <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
 
                             <artifactSet>
                                 <!-- list dependencies to add here, and add their packages to relocations below -->
