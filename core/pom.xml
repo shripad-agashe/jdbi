@@ -27,7 +27,8 @@
         Java(tm). It uses the Java collections framework for query
         results, provides a convenient means of externalizing sql
         statements, and provides named parameter support for any database
-        being used.</description>
+        being used.
+    </description>
     <url>http://jdbi.org/</url>
 
     <licenses>
@@ -157,7 +158,7 @@
                                         </goals>
                                     </pluginExecutionFilter>
                                     <action>
-                                        <ignore />
+                                        <ignore/>
                                     </action>
                                 </pluginExecution>
                             </pluginExecutions>
@@ -179,39 +180,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- XXX: disable shading because it doesn't do Java 8 yet...
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <artifactSet>
-                                <includes>
-                                    <include>org.antlr:antlr-runtime</include>
-                                    <include>com.google.guava:guava</include>
-                                </includes>
-                            </artifactSet>
-                            <relocations>
-                                <relocation>
-                                    <pattern>org.antlr.runtime</pattern>
-                                    <shadedPattern>org.jdbi.v3.org.antlr.runtime</shadedPattern>
-                                </relocation>
-
-                                <relocation>
-                                    <pattern>com.google.guava</pattern>
-                                    <shadedPattern>org.jdbi.v3.com.google.guava</shadedPattern>
-                                </relocation>
-                            </relocations>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            -->
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -223,7 +191,6 @@
                 </configuration>
             </plugin>
 
-            <!-- TODO output reduced pom -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -237,11 +204,18 @@
                             <!-- replace main jar with shaded one -->
                             <shadedArtifactAttached>false</shadedArtifactAttached>
 
+                            <!-- TODO get this file into the pom, and guava's out -->
+                            <createDependencyReducedPom>true</createDependencyReducedPom>
+                            <dependencyReducedPomLocation>${project.build.directory}/dependency-reduced-pom.xml</dependencyReducedPomLocation>
+
+                            <!-- strip unused shaded classes -->
+                            <minimizeJar>true</minimizeJar>
+
                             <artifactSet>
+                                <!-- list dependencies to add here, and add their packages to relocations below -->
                                 <includes>
-                                    <!-- list dependencies to add here, and add their packages to relocations below -->
                                     <include>com.google.guava:guava</include>
-                                    <include>com.google.code.findbugs:jsr305</include>
+                                    <include>org.antlr:antlr-runtime</include>
                                 </includes>
                             </artifactSet>
                             <relocations>
@@ -250,30 +224,10 @@
                                     <shadedPattern>org.jdbi.v3.lib.internal.com.google</shadedPattern>
                                 </relocation>
                                 <relocation>
-                                    <pattern>javax.annotation</pattern>
-                                    <shadedPattern>org.jdbi.v3.lib.internal.javax.annotation</shadedPattern>
+                                    <pattern>org.antlr</pattern>
+                                    <shadedPattern>org.jdbi.v3.lib.internal.org.antlr</shadedPattern>
                                 </relocation>
                             </relocations>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- TODO get shrinking to work right -->
-            <plugin>
-                <groupId>com.github.wvengen</groupId>
-                <artifactId>proguard-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>proguard</goal>
-                        </goals>
-                        <configuration>
-                            <proguardInclude>${project.basedir}/src/build/proguard.conf</proguardInclude>
-
-                            <includeDependency>false</includeDependency>
-                            <!--<inFilter>!org/jdbi/v?/core/**,!org/jdbi/v?/meta/**</inFilter>-->
                         </configuration>
                     </execution>
                 </executions>
