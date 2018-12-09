@@ -15,6 +15,8 @@ package org.jdbi.v3.guava;
 
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.spi.JdbiPlugin;
+import org.jdbi.v3.meta.Beta;
+import org.jooq.lambda.Unchecked;
 
 /**
  * Plugin to enable all {@code Guava} functionality.
@@ -24,5 +26,10 @@ public class GuavaPlugin implements JdbiPlugin {
     public void customizeJdbi(Jdbi db) {
         db.registerArgument(GuavaArguments.factory());
         db.registerCollector(GuavaCollectors.factory());
+    }
+
+    @Beta
+    public static String test(String word) {
+        return Unchecked.function(String::trim).apply(word);
     }
 }
