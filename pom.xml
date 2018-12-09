@@ -204,10 +204,12 @@
             </dependency>
 
             <dependency>
+                <!-- shaded, has no trans-deps -->
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
                 <version>21.0</version>
             </dependency>
+
             <dependency>
                 <groupId>io.vavr</groupId>
                 <artifactId>vavr</artifactId>
@@ -654,7 +656,7 @@
                     </execution>
                 </executions>
             </plugin>
-            
+
             <!-- placed here to make sure these libs are always shaded -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -679,12 +681,17 @@
                             <artifactSet>
                                 <includes>
                                     <include>org.jooq:jool-java-8</include>
+                                    <include>com.google.guava:guava</include>
                                 </includes>
                             </artifactSet>
                             <relocations>
                                 <relocation>
                                     <pattern>org.jooq</pattern>
                                     <shadedPattern>org.jdbi.v3.lib.internal.org.jooq</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.google</pattern>
+                                    <shadedPattern>org.jdbi.v3.lib.internal.com.google</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>
