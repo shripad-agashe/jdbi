@@ -41,7 +41,13 @@
                             <outputDirectory>${project.build.directory}/generated-sources/org/jdbi/v3/lib/internal</outputDirectory>
 
                             <artifactItems>
-
+                                <artifactItem>
+                                    <groupId>org.jooq</groupId>
+                                    <artifactId>jool-java-8</artifactId>
+                                    <version>0.9.14</version>
+                                    <type>jar</type>
+                                    <classifier>sources</classifier>
+                                </artifactItem>
                             </artifactItems>
                         </configuration>
                     </execution>
@@ -59,7 +65,7 @@
                         </goals>
                         <configuration>
                             <tasks>
-                                
+                                <replace dir="${project.build.directory}/generated-sources/org/jdbi/v3/lib/internal/org/jooq/lambda" encoding="UTF-8" token="org.jooq.lambda" value="org.jdbi.v3.lib.internal.org.jooq.lambda" />
                             </tasks>
                         </configuration>
                     </execution>
