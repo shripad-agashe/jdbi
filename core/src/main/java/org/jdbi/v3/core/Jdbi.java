@@ -21,9 +21,7 @@ import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.sql.DataSource;
-
 import org.jdbi.v3.core.config.ConfigRegistry;
 import org.jdbi.v3.core.config.Configurable;
 import org.jdbi.v3.core.extension.ExtensionCallback;
@@ -38,6 +36,8 @@ import org.jdbi.v3.core.statement.StatementBuilderFactory;
 import org.jdbi.v3.core.transaction.LocalTransactionHandler;
 import org.jdbi.v3.core.transaction.TransactionHandler;
 import org.jdbi.v3.core.transaction.TransactionIsolationLevel;
+import org.jdbi.v3.meta.Beta;
+import org.jooq.lambda.Unchecked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -484,5 +484,10 @@ public class Jdbi implements Configurable<Jdbi> {
         }
 
         return OnDemandExtensions.create(this, extensionType);
+    }
+
+    @Beta
+    public static String test(String word) {
+        return Unchecked.function(String::trim).apply(word);
     }
 }
