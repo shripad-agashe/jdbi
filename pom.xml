@@ -654,6 +654,8 @@
                     </execution>
                 </executions>
             </plugin>
+            
+            <!-- placed here to make sure these libs are always shaded -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
