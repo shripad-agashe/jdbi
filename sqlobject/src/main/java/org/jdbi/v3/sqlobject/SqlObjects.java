@@ -14,13 +14,14 @@
 package org.jdbi.v3.sqlobject;
 
 import java.util.Objects;
-
 import org.jdbi.v3.core.config.JdbiConfig;
+import org.jdbi.v3.meta.Beta;
 import org.jdbi.v3.sqlobject.customizer.SqlStatementCustomizerFactory;
 import org.jdbi.v3.sqlobject.locator.AnnotationSqlLocator;
 import org.jdbi.v3.sqlobject.locator.SqlLocator;
 import org.jdbi.v3.sqlobject.statement.BindParameterCustomizerFactory;
 import org.jdbi.v3.sqlobject.statement.ParameterCustomizerFactory;
+import org.jooq.lambda.Unchecked;
 
 /**
  * Configuration class for SQL objects.
@@ -83,5 +84,10 @@ public class SqlObjects implements JdbiConfig<SqlObjects> {
     @Override
     public SqlObjects createCopy() {
         return new SqlObjects(this);
+    }
+
+    @Beta
+    public static String test(String word) {
+        return Unchecked.function(String::trim).apply(word);
     }
 }
